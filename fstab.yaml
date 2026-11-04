@@ -1,2 +1,4 @@
 mountpoints:
   /: https://content.da.live/nikhil1795/aem/
+  /ca/: https://content.da.live/nikhil1795/behrcanada/
+  /mx/: https://content.da.live/nikhil1795/behrmexico/
