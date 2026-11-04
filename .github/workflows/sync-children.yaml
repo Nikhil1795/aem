@@ -1,0 +1,58 @@
+name: Sync code to child sites
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'blocks/**'
+      - 'styles/**'
+      - 'scripts/**'
+      - 'icons/**'
+      - 'fonts/**'
+      - 'head.html'
+      - '404.html'
+      - 'favicon.ico'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo: [behrcanada, behrmexico]
+    steps:
+      - name: Checkout parent (us)
+        uses: actions/checkout@v4
+        with:
+          path: us
+
+      - name: Checkout child (${{ matrix.repo }})
+        uses: actions/checkout@v4
+        with:
+          repository: Nikhil1795/${{ matrix.repo }}
+          token: ${{ secrets.CHILD_REPO_PAT }}
+          path: ${{ matrix.repo }}
+
+      - name: Copy shared code (preserve child's own fstab.yaml)
+        run: |
+          rsync -a --delete \
+            us/blocks/ ${{ matrix.repo }}/blocks/
+          rsync -a --delete \
+            us/styles/ ${{ matrix.repo }}/styles/
+          rsync -a --delete \
+            us/scripts/ ${{ matrix.repo }}/scripts/
+          rsync -a --delete \
+            us/icons/ ${{ matrix.repo }}/icons/
+          rsync -a --delete \
+            us/fonts/ ${{ matrix.repo }}/fonts/
+          cp us/head.html ${{ matrix.repo }}/head.html
+          cp us/404.html ${{ matrix.repo }}/404.html
+          cp us/favicon.ico ${{ matrix.repo }}/favicon.ico
+
+      - name: Commit and push if changed
+        working-directory: ${{ matrix.repo }}
+        run: |
+          git config user.name "aem-code-sync-bot"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Sync shared code from us@${{ github.sha }}"
+          git push
